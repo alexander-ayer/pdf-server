@@ -1,6 +1,21 @@
 // routes/router.js
-const express = require("express");
 
+const express = require("express");
+const { listPdfs } = require("../modules/pdfDiscovery");
+const { resolvePdfPath } = require("../modules/pdfValidation");
+const { loadMetadata } = require("../modules/metadata");
+
+// HTML escaping helper function
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+// Build the router
 function buildRouter() {
   const router = express.Router();
 
@@ -24,7 +39,24 @@ function buildRouter() {
   });
 
   // Documents list
+  // filesystem discovery with JSON metadata
   router.get("/documents", (req, res) => {
+    const pdfs = listPdfs();
+    const meta = loadMetadata();
+
+    const itemsHtml = pdfs.map((filename) => {
+      const m = meta.get(filename) || { title: filename, description: "" };
+
+      return `
+          <li>
+          <h3>${escapeHtml(m.title)}</h3>
+          <p>${escapeHtml(m.description)}</p>
+          <a href="/pdfs/${encodeURIComponent(filename)}">View / Download</a>
+          <div style="font-size: 0.9em; opacity: 0.8;">File: ${escapeHtml(filename)}</div>
+        </li>
+      `;
+    }).join("");
+
     res.status(200).send(`
       <html>
         <head>
@@ -33,9 +65,8 @@ function buildRouter() {
         </head>
         <body>
           <h1>Available Documents</h1>
-          <p>Placeholder</p>
-          <ul>
-            <li><a href="/pdfs/example.pdf">(placeholder)</a></li>
+          <ul style="list-style: none; padding-left: 0;">
+            ${itemsHtml || "<li>No Pdfs found in the pdfs/ folder.</li>"}
           </ul>
           <p><a href="/">Back to Home</a></p>
         </body>
@@ -44,11 +75,19 @@ function buildRouter() {
   });
 
   // PDF Route
+  // Serves a PDF file using sendFile() after validating request
   router.get("/pdfs/:filename", (req, res) => {
-    res.status(501).send("I haven't done this yet");
+    const filename = req.params.filename;
+    const fullPath = resolvePdfPath(filename);
+
+    if (!fullPath) {
+      return res.status(404).send("PDF not found");
+    }
+
+    return res.sendFile(fullPath);
   });
 
-  // 404
+  // 404 for bad routes
   router.use((req, res) => {
     res.status(404).send("404 - Not Found");
   });

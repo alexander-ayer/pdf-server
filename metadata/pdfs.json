@@ -1,7 +1,18 @@
 [
   {
-    "filename": "example.pdf",
-    "title": "Example PDF",
-    "description": "very intricate description"
+    "filename": "SRS_V1.1.pdf",
+    "title": "Software Requirements Specification (SRS) v1.1",
+    "description": "Defines functional and non-functional requirements, scope, and constraints for the system."
+  },
+  {
+    "filename": "SDD_V1.0.pdf",
+    "title": "System Design Document (SDD) v1.0",
+    "description": "Describes system architecture, module responsibilities, and design rationale."
+  },
+  {
+    "filename": "UIDD_V1.0.pdf",
+    "title": "User Interface Design Document (UIDD) v1.0",
+    "description": "Outlines UI structure, navigation flow, and interface requirements."
   }
 ]
+
