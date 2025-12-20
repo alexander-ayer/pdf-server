@@ -15,63 +15,128 @@ function escapeHtml(str) {
     .replaceAll("'", "&#039;");
 }
 
+// Consistent page wrapper for all routes (nav + CSS + container)
+function pageTemplate({ title, content }) {
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>${escapeHtml(title)}</title>
+        <link rel="stylesheet" href="/styles.css" />
+      </head>
+      <body>
+        <header class="nav">
+          <div class="nav-inner">
+            <div class="brand">Documentation Portal</div>
+            <nav class="nav-links">
+              <a class="btn" href="/">Home</a>
+              <a class="btn" href="/documents">Documents</a>
+            </nav>
+          </div>
+        </header>
+
+        <main class="container">
+          ${content}
+        </main>
+      </body>
+    </html>
+  `;
+}
+
 // Build the router
 function buildRouter() {
   const router = express.Router();
 
   // Home page
   router.get("/", (req, res) => {
-    res.status(200).send(`
-      <html>
-        <head>
-          <title>Software Engineering Documentation Portal</title>
-          <meta charset="utf-8" />
-        </head>
-        <body>
-          <h1>Capstone Project Documentation Portal</h1>
-          <p>Browse technical documentation PDFs: SRS, SDD, and UIDD.</p>
-          <nav>
-            <a href="/documents">View Documents</a>
-          </nav>
-        </body>
-      </html>
-    `);
+    const content = `
+      <div class="hero">
+        <h1>Capstone Project Documentation Portal</h1>
+        <p>
+          A collection of project documentation PDFs (SRS, SDD, and UIDD) served securely.
+          Browse documents, read summaries, and download official versions.
+        </p>
+        <div style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
+          <a class="btn" href="/documents">Browse Documents</a>
+        </div>
+      </div>
+
+      <div class="stack">
+        
+        <section class="card">
+          <h2>Scope</h2>
+          <p>
+            This portal provides centralized access to formal software engineering artifacts produced
+            during the capstone lifecycle. Each document captures a distinct level of abstraction,
+            from requirements analysis to design decisions and interface specifications.
+          </p>
+        </section>
+      
+        <section class="card">
+          <h2>V-Model Alignment</h2>
+          <p>
+            The documents provided align with the left side of the V-Model shape shown below.
+            Each document supports traceablity and verification throughout later testing and 
+            validation phases as we traverse up the right side of the V.
+          </p>
+
+          <div class="vmodel-wrapper">
+            <img src="/images/v-model.webp"
+                alt="V-Model software development lifecycle diagram" />
+          </div>
+        </section>
+      </div>
+    `;
+    return res.status(200).send(pageTemplate({ title: "Home", content }));
   });
 
   // Documents list
   // filesystem discovery with JSON metadata
   router.get("/documents", (req, res) => {
+    // Discover PDFs from the designated folder
     const pdfs = listPdfs();
+    // Load metadata Map: filename -> { title, description }
     const meta = loadMetadata();
 
-    const itemsHtml = pdfs.map((filename) => {
-      const m = meta.get(filename) || { title: filename, description: "" };
+    // Build list items (one per discovered PDF)
+    const itemsHtml = pdfs
+      .map((filename) => {
+        const m = meta.get(filename) || { title: filename, description: "" };
 
-      return `
-          <li>
-          <h3>${escapeHtml(m.title)}</h3>
-          <p>${escapeHtml(m.description)}</p>
-          <a href="/pdfs/${encodeURIComponent(filename)}">View / Download</a>
-          <div style="font-size: 0.9em; opacity: 0.8;">File: ${escapeHtml(filename)}</div>
-        </li>
-      `;
-    }).join("");
+        return `
+          <li class="item">
+            <h3 class="item-title">${escapeHtml(m.title)}</h3>
+            <p class="item-desc">${escapeHtml(m.description)}</p>
 
-    res.status(200).send(`
-      <html>
-        <head>
-          <title>Documents</title>
-          <meta charset="utf-8" />
-        </head>
-        <body>
-          <h1>Available Documents</h1>
-          <ul style="list-style: none; padding-left: 0;">
-            ${itemsHtml || "<li>No Pdfs found in the pdfs/ folder.</li>"}
-          </ul>
-          <p><a href="/">Back to Home</a></p>
-        </body>
-      </html>
-    `);
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <a class="btn" href="/pdfs/${encodeURIComponent(filename)}">View / Download</a>
+              <span class="meta">File: ${escapeHtml(filename)}</span>
+            </div>
+          </li>
+        `;
+      })
+      .join("");
+
+    // Page content (injected into the shared template)
+    const content = `
+      <div class="hero">
+        <h1>Documents</h1>
+        <p>
+          All documents are served securely from the server’s designated PDF directory.
+          Requests are validated before delivery.
+        </p>
+      </div>
+
+      <div class="card" style="margin-top: 16px;">
+        <ul class="list">
+          ${itemsHtml || `<li class="item"><p class="item-desc">No PDFs found in the pdfs/ folder.</p></li>`}
+        </ul>
+      </div>
+    `;
+
+    return res.status(200).send(pageTemplate({ title: "Documents", content }));
   });
 
   // PDF Route

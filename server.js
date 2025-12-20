@@ -7,6 +7,9 @@ const app = express();
 // Basic middleware
 app.use(express.urlencoded({ extended: true }));
 
+// Serve public as static assets
+app.use(express.static("public"));
+
 // ROuting module
 app.use("/", buildRouter());
 
