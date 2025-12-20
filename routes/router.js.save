@@ -1,0 +1,139 @@
+// routes/router.js
+
+const express = require("express");
+const { listPdfs } = require("../modules/pdfDiscovery");
+const { resolvePdfPath } = require("../modules/pdfValidation");
+const { loadMetadata } = require("../modules/metadata");
+
+// HTML escaping helper function
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function pageTemplate({ title, content }) {
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>${escapeHtml(title)}</title>
+        <link rel="stylesheet" href="/styles.css" />
+      </head>
+      <body>
+        <header class="nav">
+          <div class="nav-inner">
+            <div class="brand">Documentation Portal</div>
+            <nav class="nav-links">
+              <a class="btn" href="/">Home</a>
+              <a class="btn" href="/documents">Documents</a>
+            </nav>
+          </div>
+        </header>
+
+        <main class="container">
+          ${content}
+        </main>
+      </body>
+    </html>
+  `;
+}
+
+// Build the router
+function buildRouter() {
+  const router = express.Router();
+
+  // Home page
+  router.get("/", (req, res) => {
+    const content = `
+      <div class="hero">
+        <h1>Software Engineering Documentation Portal</h1>
+        <p>
+          A curated set of project documentation PDFs (SRS, SDD, UIDD) with secure access controls.
+          Browse documents, view summaries, and download the official PDFs.
+        </p>
+        <div style="margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
+          <a class="btn" href="/documents">Browse Documents</a>
+          <span class="badge">Secure PDF serving via sendFile()</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section class="card half">
+          <h2>What’s Included</h2>
+          <p>Requirements, architecture/design, and UI documentation exported as PDFs.</p>
+        </section>
+
+        <section class="card half">
+          <h2>Security Model</h2>
+          <p>PDF requests are validated and restricted to the designated folder before delivery.</p>
+        </section>
+      </div>
+    `;
+
+    res.status(200).send(pageTemplate({ title: "Home", content }));
+  });
+
+
+  // Documents list
+  // filesystem discovery with JSON metadata
+  router.get("/documents", (req, res) => {
+    const pdfs = listPdfs();
+    const meta = loadMetadata();
+
+    const itemsHtml = pdfs.map((filename) => {
+      const m = meta.get(filename) || { title: filename, description: "" };
+      return `
+        <li class="item">
+          <h3 class="item-title">${escapeHtml(m.title)}</h3>
+          <p class="item-desc">${escapeHtml(m.description)}</p>
+          <a class="btn" href="/pdfs/${encodeURIComponent(filename)}">View / Download</a>
+          <div class="meta">File: ${escapeHtml(filename)}</div>
+        </li>
+      `;
+    }).join("");
+
+    res.status(200).send(`
+      <html>
+        <head>
+          <title>Documents</title>
+          <meta charset="utf-8" />
+        </head>
+        <body>
+          <h1>Available Documents</h1>
+          <ul style="list-style: none; padding-left: 0;">
+            ${itemsHtml || "<li>No Pdfs found in the pdfs/ folder.</li>"}
+          </ul>
+          <p><a href="/">Back to Home</a></p>
+        </body>
+      </html>
+    `);
+  });
+
+  // PDF Route
+  // Serves a PDF file using sendFile() after validating request
+  router.get("/pdfs/:filename", (req, res) => {
+    const filename = req.params.filename;
+    const fullPath = resolvePdfPath(filename);
+
+    if (!fullPath) {
+      return res.status(404).send("PDF not found");
+    }
+
+    return res.sendFile(fullPath);
+  });
+
+  // 404 for bad routes
+  router.use((req, res) => {
+    res.status(404).send("404 - Not Found");
+  });
+
+  return router;
+}
+
+module.exports = { buildRouter };
