@@ -1,4 +1,5 @@
 // routes/router.js
+// Handles the routes between pages
 
 const express = require("express");
 const { listPdfs } = require("../modules/pdfDiscovery");
@@ -29,7 +30,7 @@ function pageTemplate({ title, content }) {
       <body>
         <header class="nav">
           <div class="nav-inner">
-            <div class="brand">Documentation Portal</div>
+            <div class="brand">Capstone Project Documentation Portal</div>
             <nav class="nav-links">
               <a class="btn" href="/">Home</a>
               <a class="btn" href="/documents">Documents</a>
@@ -53,7 +54,7 @@ function buildRouter() {
   router.get("/", (req, res) => {
     const content = `
       <div class="hero">
-        <h1>Capstone Project Documentation Portal</h1>
+        <h1>Documents</h1>
         <p>
           A collection of project documentation PDFs (SRS, SDD, and UIDD) served securely.
           Browse documents, read summaries, and download official versions.
@@ -86,6 +87,17 @@ function buildRouter() {
             <img src="/images/v-model.webp"
                 alt="V-Model software development lifecycle diagram" />
           </div>
+        </section>
+
+        <section class="card">
+          <h2>Validation vs Verification</h2>
+          <p>
+            The documents listed in this portal are produced during the validation phases of the
+            V-Model software development life cycle (SDLC). Validation addresses the question,
+            <em>“Are we building the right product?”</em> As development progresses back up the right side
+            of the V, the focus shifts to verification, which asks,
+            <em>“Are we building the product right?”</em>
+          </p>
         </section>
       </div>
     `;
@@ -122,10 +134,9 @@ function buildRouter() {
     // Page content (injected into the shared template)
     const content = `
       <div class="hero">
-        <h1>Documents</h1>
+        <h1>Project Documents</h1>
         <p>
-          All documents are served securely from the server’s designated PDF directory.
-          Requests are validated before delivery.
+          View all the documents from Team Black's Fall 2025 Capstone project below.
         </p>
       </div>
 
