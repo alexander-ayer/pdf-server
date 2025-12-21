@@ -28,12 +28,13 @@ To use this program, navigate to the root directory (pdf-server) and run the com
                 npm start
 Once the server has started, navigate to:
                 https://alexayer.site
+
 ## Features
 
--  Homepage featureing basic inofmation about software developement
--   A documents page that lets you view/download each document from the metadata
+-  Homepage featureing basic information about software developement
+-   A documents page that lets you view/download each document available on the server
 - Secure PDF delivery using Express sendFile() with path validation
-- JSON - based metadat storage for documents titles and descriptions
+- JSON - based metadata storage for documents, titles, and descriptions
    - Stored in single 'pdfs.json' file
    - Structure:
       - 'filename' - name of pdf file
